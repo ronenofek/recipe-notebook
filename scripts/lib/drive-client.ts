@@ -2,7 +2,8 @@ import { google } from 'googleapis';
 import fs from 'fs';
 import path from 'path';
 
-const FOLDER_ID = process.env.DRIVE_FOLDER_ID ?? '1HgtPWaMPdCQrtHZeovP_J34QT0MJjT-H';
+const FOLDER_ID = process.env.DRIVE_FOLDER_ID;
+if (!FOLDER_ID) throw new Error('DRIVE_FOLDER_ID is not set in .env.local');
 
 let _auth: google.auth.GoogleAuth | null = null;
 
