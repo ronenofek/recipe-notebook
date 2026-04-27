@@ -3,6 +3,31 @@ import type { ExtractedRecipe } from '../../src/lib/types';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// Titles that reliably contain no recipes
+const NON_RECIPE_TITLES = [
+  'introduction', 'preface', 'foreword', 'acknowledgment', 'about the author',
+  'contents', 'table of contents', 'index', 'copyright', 'bibliography',
+  'glossary', 'notes', 'appendix', 'dedication', 'resources', 'conversions',
+  'measurement', 'equipment', 'pantry', 'about this book', 'how to use',
+  'part i', 'part ii', 'part iii', 'part iv', 'part v',
+];
+
+// Signals that text likely contains at least one recipe
+const RECIPE_SIGNALS = [
+  /\b\d+\s*(g|gram|kg|oz|lb|cup|cups|tbsp|tsp|ml|liter|litre)\b/i,
+  /\b(yield|serves|servings|makes)\b/i,
+  /\bstep\s*\d+\b/i,
+  /\bingredients?\b/i,
+  /\b(preheat|bake at|bake for|cook for|simmer|knead|fold in|whisk|sift)\b/i,
+];
+
+export function looksLikeRecipeChapter(title: string, text: string): boolean {
+  const t = title.toLowerCase();
+  if (NON_RECIPE_TITLES.some(skip => t.includes(skip))) return false;
+  const sample = text.slice(0, 8000);
+  return RECIPE_SIGNALS.some(re => re.test(sample));
+}
+
 const SYSTEM_PROMPT = `You are a precise recipe extraction engine. Given cookbook content, extract ALL complete recipes found. Return a JSON array. If no recipes are present, return [].
 
 For each recipe return exactly this structure:

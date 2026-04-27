@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
         const { downloadFile, listCookbookFiles, parseBookMeta } = await import('../../../../../scripts/lib/drive-client');
         const { parseEpub } = await import('../../../../../scripts/lib/epub-parser');
         const { extractPdfText, chunkPdfPages, renderPdfPages } = await import('../../../../../scripts/lib/pdf-parser');
-        const { extractRecipesFromChapter } = await import('../../../../../scripts/lib/claude-extractor');
+        const { extractRecipesFromChapter, looksLikeRecipeChapter } = await import('../../../../../scripts/lib/claude-extractor');
         const { upsertBook, logChapterPending, isChapterDone, markChapterStatus, writeRecipes, markBookIngested } = await import('../../../../../scripts/lib/db-writer');
         const pLimit = (await import('p-limit')).default;
 
@@ -146,6 +146,14 @@ export async function POST(req: NextRequest) {
               const content = chapterData.text ?? '';
               const title = chapterData.title ?? chapterId;
               const imagesDir = path.join(bookDir, 'images');
+
+              // Skip chapters that clearly don't contain recipes
+              if (!looksLikeRecipeChapter(title, content)) {
+                markChapterStatus(db, bookId, chapterId, 'done', 0);
+                done++;
+                send({ type: 'chapter_progress', drive_id: file.id, chapter_current: done, chapter_total: total, recipes_found: totalRecipes });
+                return;
+              }
 
               try {
                 const recipes = await extractRecipesFromChapter(book.title, book.author, title, content, isFirst);

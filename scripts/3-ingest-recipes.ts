@@ -3,13 +3,13 @@ import path from 'path';
 import fs from 'fs';
 import pLimit from 'p-limit';
 import { getDb } from '../src/lib/db';
-import { extractRecipesFromChapter } from './lib/claude-extractor';
+import { extractRecipesFromChapter, looksLikeRecipeChapter } from './lib/claude-extractor';
 import { isChapterDone, markChapterStatus, writeRecipes, markBookIngested } from './lib/db-writer';
 import type { Book } from '../src/lib/types';
 
 const BOOKS_DIR = path.join(process.cwd(), 'books');
 const RETRY_ERRORS = process.argv.includes('--retry-errors');
-const CONCURRENCY = 3;
+const CONCURRENCY = 1;
 
 async function ingestBook(book: Book) {
   const db = getDb();
@@ -38,8 +38,14 @@ async function ingestBook(book: Book) {
       }
 
       const chapterData = JSON.parse(fs.readFileSync(path.join(chaptersDir, filename), 'utf8'));
-      const content = chapterData.text ?? chapterData.text ?? '';
+      const content = chapterData.text ?? '';
       const title = chapterData.title ?? chapterData.id ?? filename;
+
+      if (!looksLikeRecipeChapter(title, content)) {
+        markChapterStatus(db, book.id, chapterId, 'done', 0);
+        process.stdout.write('-');
+        return;
+      }
 
       try {
         const recipes = await extractRecipesFromChapter(
