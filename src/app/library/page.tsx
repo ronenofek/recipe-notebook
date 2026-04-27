@@ -220,7 +220,7 @@ export default function LibraryPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto pb-20">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-stone-900">Library</h1>
@@ -358,9 +358,17 @@ export default function LibraryPage() {
             );
           })}
 
-          <div className="flex items-center justify-between mt-6">
+        </section>
+      )}
+
+      {/* Sticky load bar — always visible when there are unloaded books */}
+      {available.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 shadow-lg z-50">
+          <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between">
             <p className="text-sm text-stone-500">
-              {selected.size > 0 ? `${selected.size} book${selected.size > 1 ? 's' : ''} selected` : 'Select books to load'}
+              {selected.size > 0
+                ? `${selected.size} book${selected.size > 1 ? 's' : ''} selected`
+                : 'Select books above to load'}
             </p>
             <button
               onClick={loadSelected}
@@ -374,7 +382,7 @@ export default function LibraryPage() {
               )}
             </button>
           </div>
-        </section>
+        </div>
       )}
 
       {library.length === 0 && (
