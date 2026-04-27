@@ -1,0 +1,43 @@
+{
+  "name": "recipe-notebook",
+  "version": "1.0.0",
+  "description": "Personal searchable cookbook aggregating all your books",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "db:init": "tsx scripts/0-init-db.ts",
+    "books:download": "tsx scripts/1-download-books.ts",
+    "books:extract": "tsx scripts/2-extract-content.ts",
+    "books:ingest": "tsx scripts/3-ingest-recipes.ts",
+    "books:ingest:retry": "tsx scripts/3-ingest-recipes.ts --retry-errors"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.91.1",
+    "@react-pdf/renderer": "^4.5.1",
+    "@tailwindcss/postcss": "^4.2.4",
+    "@types/adm-zip": "^0.5.8",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/sharp": "^0.31.1",
+    "adm-zip": "^0.5.17",
+    "better-sqlite3": "^12.9.0",
+    "cheerio": "^1.2.0",
+    "googleapis": "^171.4.0",
+    "lucide-react": "^1.11.0",
+    "next": "^15.5.15",
+    "p-limit": "^7.3.0",
+    "pdf2pic": "^3.2.0",
+    "pdfjs-dist": "^5.6.205",
+    "postcss": "^8.5.12",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^4.2.4",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__646a904b-6f15-4bf0-a254-141155e6c94b__search_files",
+      "Bash(npm --version)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --app --src-dir --no-eslint --import-alias \"@/*\" --no-turbopack --yes)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(npx next *)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}
