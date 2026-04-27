@@ -34,8 +34,9 @@ function categorizeBook(title: string, author: string): BookCategory {
   return 'Others';
 }
 
-export async function GET() {
-  if (cache && Date.now() < cache.expires) {
+export async function GET(req: Request) {
+  const force = new URL(req.url).searchParams.get('force') === 'true';
+  if (!force && cache) {
     return NextResponse.json(cache.data);
   }
 
@@ -108,7 +109,7 @@ export async function GET() {
     });
 
     const result = { library };
-    cache = { data: result, expires: Date.now() + 60_000 };
+    cache = { data: result, expires: Infinity };
     return NextResponse.json(result);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

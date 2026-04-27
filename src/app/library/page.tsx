@@ -59,7 +59,7 @@ export default function LibraryPage() {
   const fetchLibrary = useCallback(async (showRefreshing = false) => {
     if (showRefreshing) setRefreshing(true);
     try {
-      const res = await fetch('/api/library');
+      const res = await fetch(showRefreshing ? '/api/library?force=true' : '/api/library');
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json() as { library: LibraryEntry[] };
       setLibrary(data.library);
@@ -160,7 +160,7 @@ export default function LibraryPage() {
           } else if (event.type === 'all_done') {
             setIsLoadingBooks(false);
             setSelected(new Set());
-            await fetchLibrary(false);
+            await fetchLibrary(true); // force refresh after ingestion completes
           }
         } catch {}
       }
