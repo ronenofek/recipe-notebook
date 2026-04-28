@@ -1,10 +1,9 @@
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Clock, Users, ChevronLeft, BookOpen, Tag } from 'lucide-react';
 import { getDb } from '@/lib/db';
 import ExportButton from '@/components/ExportButton';
-import type { Recipe, RecipeImage, Ingredient } from '@/lib/types';
+import type { Recipe, Ingredient } from '@/lib/types';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -25,21 +24,12 @@ export default async function RecipePage({ params }: PageProps) {
 
   if (!recipe) notFound();
 
-  const images = db.prepare(
-    'SELECT * FROM recipe_images WHERE recipe_id = ? ORDER BY sort_order'
-  ).all(recipeId) as RecipeImage[];
-
   const ingredients = db.prepare(
     'SELECT * FROM ingredients WHERE recipe_id = ? ORDER BY id'
   ).all(recipeId) as Ingredient[];
 
   const instructions: string[] = recipe.instructions ? JSON.parse(recipe.instructions) : [];
   const tags: string[] = recipe.tags ? JSON.parse(recipe.tags) : [];
-
-  const allImages = [
-    ...(recipe.primary_image ? [recipe.primary_image] : []),
-    ...images.map(i => i.path).filter(p => p !== recipe.primary_image),
-  ];
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -50,13 +40,6 @@ export default async function RecipePage({ params }: PageProps) {
         </Link>
         <ExportButton recipeId={recipeId} recipeTitle={recipe.title} />
       </div>
-
-      {/* Hero image */}
-      {allImages.length > 0 && (
-        <div className="relative aspect-video rounded-2xl overflow-hidden mb-6 bg-stone-100">
-          <Image src={allImages[0]} alt={recipe.title} fill className="object-cover" priority />
-        </div>
-      )}
 
       {/* Header */}
       <div className="mb-6">
@@ -172,19 +155,6 @@ export default async function RecipePage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Additional images */}
-      {allImages.length > 1 && (
-        <div className="mt-8">
-          <h3 className="font-semibold text-stone-700 mb-3 text-sm">More photos</h3>
-          <div className="grid grid-cols-3 gap-2">
-            {allImages.slice(1).map((img, i) => (
-              <div key={i} className="aspect-video rounded-lg overflow-hidden bg-stone-100 relative">
-                <Image src={img} alt={`${recipe.title} photo ${i + 2}`} fill className="object-cover" />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

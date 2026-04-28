@@ -14,7 +14,6 @@ const CONCURRENCY = 1;
 async function ingestBook(book: Book) {
   const db = getDb();
   const chaptersDir = path.join(BOOKS_DIR, book.drive_id, 'chapters');
-  const imagesDir = path.join(BOOKS_DIR, book.drive_id, 'images');
 
   if (!fs.existsSync(chaptersDir)) {
     console.log(`  [SKIP] No chapters directory (run books:extract first)`);
@@ -54,7 +53,7 @@ async function ingestBook(book: Book) {
         isFirst = false;
 
         if (recipes.length > 0) {
-          writeRecipes(db, book.id, title, recipes, imagesDir, book.drive_id);
+          writeRecipes(db, book.id, title, recipes);
           totalRecipes += recipes.length;
           process.stdout.write(`[${recipes.length}]`);
         } else {

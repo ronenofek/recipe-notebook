@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import type { Recipe, RecipeImage, Ingredient } from '@/lib/types';
+import type { Recipe, Ingredient } from '@/lib/types';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,13 +19,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   if (!recipe) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const images = db.prepare(
-    'SELECT * FROM recipe_images WHERE recipe_id = ? ORDER BY sort_order'
-  ).all(recipeId) as RecipeImage[];
-
   const ingredients = db.prepare(
     'SELECT * FROM ingredients WHERE recipe_id = ? ORDER BY id'
   ).all(recipeId) as Ingredient[];
 
-  return NextResponse.json({ recipe, images, ingredients });
+  return NextResponse.json({ recipe, ingredients });
 }

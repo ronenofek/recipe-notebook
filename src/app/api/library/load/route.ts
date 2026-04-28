@@ -145,7 +145,6 @@ export async function POST(req: NextRequest) {
               const chapterData = JSON.parse(fs.readFileSync(path.join(chaptersDir, filename), 'utf8'));
               const content = chapterData.text ?? '';
               const title = chapterData.title ?? chapterId;
-              const imagesDir = path.join(bookDir, 'images');
 
               // Skip chapters that clearly don't contain recipes
               if (!looksLikeRecipeChapter(title, content)) {
@@ -159,7 +158,7 @@ export async function POST(req: NextRequest) {
                 const recipes = await extractRecipesFromChapter(book.title, book.author, title, content, isFirst);
                 isFirst = false;
                 if (recipes.length > 0) {
-                  writeRecipes(db, bookId, title, recipes, imagesDir, file.id);
+                  writeRecipes(db, bookId, title, recipes);
                   totalRecipes += recipes.length;
                 }
                 markChapterStatus(db, bookId, chapterId, 'done', recipes.length);

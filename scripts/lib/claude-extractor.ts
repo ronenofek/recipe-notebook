@@ -45,8 +45,7 @@ For each recipe return exactly this structure:
   ],
   "instructions": string[],
   "notes": string | null,
-  "tags": string[],
-  "image_refs": string[]
+  "tags": string[]
 }
 
 Rules:
@@ -54,7 +53,6 @@ Rules:
 - Include the COMPLETE recipe - never truncate ingredients or instructions
 - Each instruction step should be one action, not a paragraph
 - Do not invent information not present in the text
-- image_refs: list any image filenames (e.g. "img001.jpg") found in <img> tags adjacent to this recipe
 - Return ONLY valid JSON array, no explanation text`;
 
 async function callWithRetry(fn: () => Promise<Anthropic.Message>, maxRetries = 4): Promise<Anthropic.Message> {
@@ -79,33 +77,35 @@ async function callWithRetry(fn: () => Promise<Anthropic.Message>, maxRetries = 
   throw new Error('Max retries exceeded');
 }
 
-export async function extractRecipesFromChapter(
+// Max chars to send in a single Claude call. Keeps output within ~8k token limit.
+const CHUNK_SIZE = 14000;
+const CHUNK_OVERLAP = 400;
+
+async function extractChunk(
   bookTitle: string,
   bookAuthor: string,
   chapterTitle: string,
-  chapterContent: string,
-  isFirstChapter: boolean
+  chunkContent: string,
+  isFirstCall: boolean,
+  chunkIndex: number,
+  totalChunks: number,
 ): Promise<ExtractedRecipe[]> {
+  const chunkLabel = totalChunks > 1 ? ` (part ${chunkIndex + 1}/${totalChunks})` : '';
   const userContent = `Book: ${bookTitle}
 Author: ${bookAuthor}
-Chapter: ${chapterTitle}
+Chapter: ${chapterTitle}${chunkLabel}
 
 ---
-${chapterContent.slice(0, 30000)}
+${chunkContent}
 ---
 
 Extract all recipes from the above content. Return a JSON array only.`;
-
-  const messages: Anthropic.MessageParam[] = [
-    { role: 'user', content: userContent },
-  ];
 
   const systemBlocks: Anthropic.TextBlockParam[] = [
     {
       type: 'text',
       text: SYSTEM_PROMPT,
-      // Cache system prompt across chapters of the same book
-      ...(isFirstChapter ? {} : { cache_control: { type: 'ephemeral' } }),
+      ...(isFirstCall ? {} : { cache_control: { type: 'ephemeral' } }),
     },
   ];
 
@@ -114,7 +114,7 @@ Extract all recipes from the above content. Return a JSON array only.`;
       model: 'claude-haiku-4-5',
       max_tokens: 8192,
       system: systemBlocks,
-      messages,
+      messages: [{ role: 'user', content: userContent }],
     })
   );
 
@@ -123,15 +123,59 @@ Extract all recipes from the above content. Return a JSON array only.`;
     .map(b => b.text)
     .join('');
 
-  // Extract JSON array from response (strip any accidental markdown fences)
+  if (response.stop_reason === 'max_tokens') {
+    // Still truncated even after chunking — salvage what we can
+    const lastClose = text.lastIndexOf('}');
+    const salvage = lastClose > 0 ? text.slice(0, lastClose + 1) + ']' : text;
+    const m = salvage.match(/\[[\s\S]*\]/);
+    if (!m) return [];
+    try {
+      const parsed = JSON.parse(m[0]);
+      return Array.isArray(parsed) ? (parsed as ExtractedRecipe[]) : [];
+    } catch { return []; }
+  }
+
   const jsonMatch = text.match(/\[[\s\S]*\]/);
   if (!jsonMatch) return [];
 
   try {
     const parsed = JSON.parse(jsonMatch[0]);
-    if (!Array.isArray(parsed)) return [];
-    return parsed as ExtractedRecipe[];
-  } catch {
-    return [];
+    return Array.isArray(parsed) ? (parsed as ExtractedRecipe[]) : [];
+  } catch { return []; }
+}
+
+export async function extractRecipesFromChapter(
+  bookTitle: string,
+  bookAuthor: string,
+  chapterTitle: string,
+  chapterContent: string,
+  isFirstChapter: boolean
+): Promise<ExtractedRecipe[]> {
+  // Split large chapters into overlapping chunks so output never exceeds token limit
+  const chunks: string[] = [];
+  if (chapterContent.length <= CHUNK_SIZE) {
+    chunks.push(chapterContent);
+  } else {
+    for (let offset = 0; offset < chapterContent.length; offset += CHUNK_SIZE - CHUNK_OVERLAP) {
+      chunks.push(chapterContent.slice(offset, offset + CHUNK_SIZE));
+      if (offset + CHUNK_SIZE >= chapterContent.length) break;
+    }
   }
+
+  const seen = new Set<string>();
+  const results: ExtractedRecipe[] = [];
+
+  for (let i = 0; i < chunks.length; i++) {
+    const isFirstCall = isFirstChapter && i === 0;
+    const recipes = await extractChunk(bookTitle, bookAuthor, chapterTitle, chunks[i], isFirstCall, i, chunks.length);
+    for (const recipe of recipes) {
+      const key = recipe.title.toLowerCase().trim();
+      if (!seen.has(key)) {
+        seen.add(key);
+        results.push(recipe);
+      }
+    }
+  }
+
+  return results;
 }

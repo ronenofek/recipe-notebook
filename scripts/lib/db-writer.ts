@@ -1,21 +1,5 @@
 import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
 import type { ExtractedRecipe } from '../../src/lib/types';
-
-const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif']);
-
-function validateImagePath(filename: string, imagesDir: string): string | null {
-  // Strip any path traversal
-  const basename = path.basename(filename);
-  const ext = path.extname(basename).toLowerCase();
-  if (!ALLOWED_IMAGE_EXTENSIONS.has(ext)) return null;
-
-  const fullPath = path.join(imagesDir, basename);
-  if (!fs.existsSync(fullPath)) return null;
-
-  return basename;
-}
 
 export function upsertBook(
   db: Database.Database,
@@ -81,14 +65,12 @@ export function writeRecipes(
   bookId: number,
   chapterTitle: string,
   recipes: ExtractedRecipe[],
-  imagesDir: string,
-  driveId: string,
 ): void {
   const insertRecipe = db.prepare(`
     INSERT INTO recipes (
       book_id, title, description, servings, prep_time, cook_time, total_time,
-      course, cuisine, ingredients_raw, instructions, notes, tags, source_chapter, primary_image
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      course, cuisine, ingredients_raw, instructions, notes, tags, source_chapter
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const insertIngredient = db.prepare(`
@@ -96,23 +78,9 @@ export function writeRecipes(
     VALUES (?, ?, ?, ?, ?, ?)
   `);
 
-  const insertImage = db.prepare(`
-    INSERT INTO recipe_images (recipe_id, path, sort_order)
-    VALUES (?, ?, ?)
-  `);
-
   const writeAll = db.transaction(() => {
     for (const recipe of recipes) {
       if (!recipe.title?.trim()) continue;
-
-      // Validate and resolve image refs
-      const validImages: string[] = [];
-      for (const ref of (recipe.image_refs ?? [])) {
-        const validated = validateImagePath(ref, imagesDir);
-        if (validated) {
-          validImages.push(`/book-images/${driveId}/${validated}`);
-        }
-      }
 
       const ingredientsJson = JSON.stringify(
         (recipe.ingredients ?? []).map(i => {
@@ -136,7 +104,6 @@ export function writeRecipes(
         recipe.notes ?? null,
         JSON.stringify(recipe.tags ?? []),
         chapterTitle,
-        validImages[0] ?? null,
       );
 
       const recipeId = result.lastInsertRowid as number;
@@ -148,10 +115,6 @@ export function writeRecipes(
           ing.quantity ?? null, ing.unit ?? null,
           ing.preparation ?? null, ing.optional ? 1 : 0
         );
-      }
-
-      for (let i = 0; i < validImages.length; i++) {
-        insertImage.run(recipeId, validImages[i], i);
       }
     }
   });

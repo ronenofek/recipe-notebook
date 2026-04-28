@@ -1,29 +1,15 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { Clock, Users, BookOpen } from 'lucide-react';
 import type { Recipe } from '@/lib/types';
 
 export default function RecipeCard({ recipe }: { recipe: Recipe }) {
-  const tags: string[] = recipe.tags ? JSON.parse(recipe.tags) : [];
-
   return (
     <Link
       href={`/recipe/${recipe.id}`}
       className="group bg-white rounded-xl border border-stone-200 overflow-hidden hover:shadow-md hover:border-amber-200 transition-all"
     >
-      <div className="aspect-video bg-stone-100 relative overflow-hidden">
-        {recipe.primary_image ? (
-          <Image
-            src={recipe.primary_image}
-            alt={recipe.title}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-stone-300">
-            <BookOpen className="w-10 h-10" />
-          </div>
-        )}
+      <div className="aspect-video bg-stone-100 relative overflow-hidden flex items-center justify-center text-stone-300">
+        <BookOpen className="w-10 h-10" />
         {recipe.course && (
           <span className="absolute top-2 left-2 bg-white/90 text-stone-700 text-xs font-medium px-2 py-0.5 rounded-full">
             {recipe.course}

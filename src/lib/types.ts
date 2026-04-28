@@ -28,18 +28,10 @@ export interface Recipe {
   notes: string | null;
   tags: string | null;     // JSON string of string[]
   source_chapter: string | null;
-  primary_image: string | null;
   created_at: string;
   // Joined fields
   book_title?: string;
   book_author?: string;
-}
-
-export interface RecipeImage {
-  id: number;
-  recipe_id: number;
-  path: string;
-  sort_order: number;
 }
 
 export interface Ingredient {
@@ -73,7 +65,6 @@ export interface ExtractedRecipe {
   instructions: string[];
   notes: string | null;
   tags: string[];
-  image_refs: string[];
 }
 
 export type BookCategory = 'Bread Baking' | 'Fermentation' | 'Asian' | 'Central/South America' | 'Others';

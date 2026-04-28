@@ -7,7 +7,7 @@ A local-first web application that turns your personal cookbook collection into 
 ## Features
 
 - **Full-text search** across all recipes (title, ingredients, instructions, cuisine, tags)
-- **Recipe detail pages** with ingredients, instructions, notes, and extracted images
+- **Recipe detail pages** with ingredients, instructions, and notes
 - **Books page** showing all loaded cookbooks with cover art
 - **Library management** to sync with Google Drive and selectively load books
 - **Book categories**: Bread Baking, Fermentation, Asian, Central/South America, Others
@@ -15,6 +15,7 @@ A local-first web application that turns your personal cookbook collection into 
 - **PDF export** of any recipe with book/author credit
 - **Live ingestion progress** streamed to the browser via Server-Sent Events
 - **Resume-safe ingestion**: re-runs skip already-processed chapters
+- **Automatic chapter chunking**: large chapters are split into overlapping pieces so Claude's output never hits the token limit
 
 ---
 
@@ -124,24 +125,22 @@ recipe-notebook/
 ├── books/                            # Downloaded EPUBs/PDFs (gitignored)
 │   └── {drive_id}/
 │       ├── original.epub
-│       ├── chapters/
-│       └── images/
+│       └── chapters/
 ├── public/
-│   └── book-images/                  # Cover + recipe images served statically
+│   └── book-images/                  # Book cover images served statically
 │       └── {drive_id}/
-│           ├── cover.jpg             # Extracted from EPUB
-│           └── *.jpg / *.png
+│           └── cover.jpg             # Extracted from EPUB
 ├── scripts/
 │   ├── 0-init-db.ts                  # Create database schema
 │   ├── 1-download-books.ts           # Download from Drive
-│   ├── 2-extract-content.ts          # Parse EPUB/PDF, extract images
+│   ├── 2-extract-content.ts          # Parse EPUB/PDF, extract chapters
 │   ├── 3-ingest-recipes.ts           # Claude extraction, write to DB
 │   └── lib/
 │       ├── drive-client.ts           # Google Drive API wrapper
 │       ├── epub-parser.ts            # adm-zip + cheerio parser
 │       ├── pdf-parser.ts             # pdfjs-dist + pdf2pic
-│       ├── claude-extractor.ts       # Claude API calls with retry
-│       └── db-writer.ts              # Validated DB writes
+│       ├── claude-extractor.ts       # Claude API calls with chunking + retry
+│       └── db-writer.ts              # DB writes
 └── src/
     ├── lib/
     │   ├── db.ts                     # SQLite singleton + schema
@@ -186,7 +185,7 @@ These scripts let you run each pipeline stage manually:
 
 ```bash
 npm run books:download       # Download all Drive books to books/
-npm run books:extract        # Parse EPUB/PDF, extract images
+npm run books:extract        # Parse EPUB/PDF, extract chapters
 npm run books:ingest         # Run Claude extraction, write recipes to DB
 npm run books:ingest:retry   # Re-run only chapters that previously errored
 ```
@@ -195,7 +194,7 @@ npm run books:ingest:retry   # Re-run only chapters that previously errored
 
 ## Estimated API Cost
 
-Around $2-5 total for all 22 books using Claude Haiku with prompt caching (~400-600 API calls).
+Around $2-5 total for all 22 books using Claude Haiku with prompt caching (~400-600 API calls). Large chapters are automatically split into 14,000-character chunks, so each API call stays within the output token limit.
 
 ---
 
@@ -203,7 +202,6 @@ Around $2-5 total for all 22 books using Claude Haiku with prompt caching (~400-
 
 - Google Service Account has **read-only** Drive scope — it cannot modify any files
 - The credentials file and `.env.local` are gitignored
-- All image paths from Claude are validated before writing to the database (no path traversal)
 - FTS5 queries use parameterized statements
 - The ingestion endpoint only accepts requests from localhost in Phase 1
 
