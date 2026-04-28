@@ -17,7 +17,7 @@ credentials/
 db/
 
 # Downloaded books (large files, local data)
-books/
+/books/
 
 # Build output
 build/

@@ -48,30 +48,43 @@ export default function SearchPage() {
 
   return (
     <div>
-      {/* Search bar */}
-      <div className="relative mb-6">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400 pointer-events-none" />
-        <input
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Search recipes, ingredients, cuisines..."
-          className="w-full pl-12 pr-10 py-3.5 bg-white border border-stone-300 rounded-xl text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-base shadow-sm"
-          autoFocus
-        />
-        {query && (
-          <button onClick={() => setQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600">
-            <X className="w-4 h-4" />
-          </button>
+      {/* Hero search section */}
+      <div className="mb-10">
+        {!query && !course && !cuisine && !bookId && (
+          <div className="text-center mb-6">
+            <h1 className="font-serif-display text-4xl font-bold text-stone-900 mb-2">
+              What are you cooking?
+            </h1>
+            <p className="text-stone-500 text-base">
+              Search across {data?.total ? `${data.total.toLocaleString()} recipes` : 'your cookbooks'}
+            </p>
+          </div>
         )}
+
+        <div className="relative max-w-2xl mx-auto">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400 pointer-events-none" />
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Recipe name, ingredient, cuisine..."
+            className="w-full pl-12 pr-10 py-4 bg-white border-2 border-stone-200 rounded-2xl text-stone-900 placeholder-stone-400 focus:outline-none focus:border-amber-400 text-base shadow-sm transition-colors"
+            autoFocus
+          />
+          {query && (
+            <button onClick={() => setQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap items-center gap-2 mb-6">
         {data?.courses && data.courses.length > 0 && (
           <select
             value={course}
             onChange={e => setCourse(e.target.value)}
-            className="px-3 py-1.5 bg-white border border-stone-300 rounded-lg text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="px-3 py-1.5 bg-white border border-stone-200 rounded-full text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-sm"
           >
             <option value="">All courses</option>
             {data.courses.map(c => (
@@ -83,7 +96,7 @@ export default function SearchPage() {
           <select
             value={cuisine}
             onChange={e => setCuisine(e.target.value)}
-            className="px-3 py-1.5 bg-white border border-stone-300 rounded-lg text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="px-3 py-1.5 bg-white border border-stone-200 rounded-full text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-sm"
           >
             <option value="">All cuisines</option>
             {data.cuisines.map(c => (
@@ -94,19 +107,18 @@ export default function SearchPage() {
         {(course || cuisine || bookId) && (
           <button
             onClick={() => { setCourse(''); setCuisine(''); setBookId(undefined); }}
-            className="px-3 py-1.5 text-sm text-amber-700 hover:underline"
+            className="px-3 py-1.5 text-sm text-amber-700 hover:text-amber-900 font-medium"
           >
             Clear filters
           </button>
         )}
-      </div>
 
-      {/* Results count */}
-      {data && (
-        <p className="text-sm text-stone-500 mb-4">
-          {loading ? 'Searching...' : `${data.total.toLocaleString()} recipe${data.total !== 1 ? 's' : ''}${query ? ` for "${query}"` : ''}`}
-        </p>
-      )}
+        {data && (query || course || cuisine || bookId) && (
+          <span className="text-sm text-stone-400 ml-auto">
+            {loading ? 'Searching...' : `${data.total.toLocaleString()} result${data.total !== 1 ? 's' : ''}`}
+          </span>
+        )}
+      </div>
 
       {/* Recipe grid */}
       <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 transition-opacity ${loading ? 'opacity-50' : ''}`}>

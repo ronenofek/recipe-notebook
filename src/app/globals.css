@@ -1,1 +1,13 @@
 @import "tailwindcss";
+
+:root {
+  --bg-cream: #faf7f2;
+}
+
+body {
+  background-color: var(--bg-cream);
+}
+
+.font-serif-display {
+  font-family: var(--font-playfair), Georgia, 'Times New Roman', serif;
+}
